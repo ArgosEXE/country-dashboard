@@ -73,7 +73,7 @@ def filter_for_region(countries, region):
 
     result = []
     for country in countries:
-        if country["regiao"] == format_region(region):
+        if format_region(country["regiao"]) == region:
             result.append(country)
 
     return result
