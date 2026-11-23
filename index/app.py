@@ -26,6 +26,7 @@ def build_table(countries):
         table.append(line)
     return table
 
+
 def search_for_name(countries, search):
     """Devolve só os países cujo nome contém o texto buscado."""
     founded = []
@@ -34,6 +35,7 @@ def search_for_name(countries, search):
             founded.append(country)
 
     return founded
+
 
 def list_regions(countries):
     """Devolve as reagiões dos países, sem repetição e em ordem alfabética."""
@@ -58,9 +60,11 @@ def list_nome_moeda(countries):
     nomes_moedas.sort()
     return nomes_moedas
 
+
 def cambio(cotacao, real):
     calculo = real/cotacao
     return round(calculo, 2)
+
 
 def filter_for_region(countries, region):
     """Devolve só os países da região escolhida. Com "Todas", devolve todos."""
@@ -69,10 +73,11 @@ def filter_for_region(countries, region):
 
     result = []
     for country in countries:
-        if country["regiao"] == region:
+        if country["regiao"] == format_region(region):
             result.append(country)
 
     return result
+
 
 def format_region(region: str):
     """Traduz os nomes das regiões"""
@@ -102,21 +107,16 @@ def format_region(region: str):
         case _:
             pass
 
+
 def format_num(num: int):
     """Adiciona notação pela quantidade de classes numéricas"""
     thousend_separator = ["", " mil", " milhões", " bilhões"]
     error_correct = [3, 6, 9]
     thousend_separators_amount = trunc(len(str(num))/3)-1 if len(str(num)) in error_correct else trunc(len(str(num))/3)
     return f"{round(num / (pow(1000, thousend_separators_amount)), 2)}" + thousend_separator[thousend_separators_amount]
-    
-            
 
-def main():
-    st.set_page_config(page_title="Países do Mundo", page_icon="🌎​", layout="wide")
-    st.title("Países do Mundo")
 
-    countries = dados.load_countries()
-
+def sidebar(countries):
     with st.sidebar:
         st.title("Câmbio")
         search_sidebar = st.selectbox(
@@ -134,7 +134,8 @@ def main():
             )
 
 
-    col1, col2, col3, col4 = st.columns(4)
+def mostrar_paises(countries):
+    col1 = st.columns(1)
     countries_amount = len(countries)
     col1.metric("Total de países", countries_amount)
 
@@ -149,10 +150,21 @@ def main():
     countries_amount = len(founded)
 
     if countries_amount == 0:
-        st.warning("Nenhum país encontrado")
+            st.warning("Nenhum país encontrado")
     else:
         st.write(f"Países encontrados: {countries_amount}")
         st.dataframe(build_table(founded))
+
+
+def main():
+    st.set_page_config(page_title="Países do Mundo", page_icon="🌎​", layout="wide")
+    st.title("Países do Mundo")
+
+    countries = dados.load_countries()
+
+    sidebar(countries)
+
+    mostrar_paises(countries)
 
 if __name__ == "__main__":
     main()
