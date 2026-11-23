@@ -135,9 +135,8 @@ def sidebar(countries):
 
 
 def mostrar_paises(countries):
-    col1 = st.columns(1)
     countries_amount = len(countries)
-    col1.metric("Total de países", countries_amount)
+    st.metric("Total de países", countries_amount)
 
     col_search, col_regions = st.columns(2)
 
