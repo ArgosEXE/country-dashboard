@@ -6,6 +6,10 @@ from math import trunc, pow
 
 import dados
 
+
+STATUS = ["Quero viajar", "Em viagem", "Já viajei"]
+
+
 def build_table(countries):
     """Prepara as linhas que aparecem na tabela, com nomes de coluna amigáveis."""
     table = []
@@ -134,25 +138,91 @@ def sidebar(countries):
             )
 
 
-def mostrar_paises(countries):
-    countries_amount = len(countries)
-    st.metric("Total de países", countries_amount)
+def find_country(countries, country_name):
+    """Devolve o primeiro pais com esse nome."""
+    for country in countries:
+        if country["pais"] == country_name:
+            return country
+
+
+def list_countries_names(countries):
+    countries_names = []
+    for country in countries:
+        countries_names.append(country["pais"])
+    return countries_names
+
+
+def show_countries(countries):
+    st.metric("Total de países", len(countries))
 
     col_search, col_regions = st.columns(2)
 
     search = col_search.text_input("Buscar países")
     region = col_regions.selectbox("Filtrar por Região", ["Todas"] + list_regions(countries))
 
-    countries_region = filter_for_region(countries, region)
-    founded = search_for_name(countries_region, search)
+    found = filter_for_region(countries, region)
+    found = search_for_name(found, search)
 
-    countries_amount = len(founded)
+    countries_amount = len(found)
 
     if countries_amount == 0:
             st.warning("Nenhum país encontrado")
     else:
         st.write(f"Países encontrados: {countries_amount}")
-        st.dataframe(build_table(founded))
+        st.dataframe(build_table(found))
+        
+        country_name = st.selectbox("Escolha um país", ["Selecione"] + list_countries_names(found))
+        country = find_country(found, country_name)
+        if country:
+            if st.button("Adicionar a lista de desejos de viagem"):
+                travel_wish_list = dados.load_travel_wish()
+                if country_name in travel_wish_list:
+                    st.warning("Esse país já está na lista de desejos.")
+                else:
+                    dados.save_travel_wish(country)
+                    st.toast("País adicionado!", icon="✅",)
+                    st.rerun()
+
+
+def build_travel_wish_table(travel_wish_list):
+    """Prepara as linhas da tabela de desejos de viagem."""
+    tabela = []
+    for pais, travel_wish in travel_wish_list.items():
+        linha = {
+            "País": pais,
+            "Região": travel_wish["regiao"],
+            "Moeda": travel_wish["moeda"],
+            "Cotação em Reais": travel_wish["cotacao_brl"],
+            "Status": travel_wish["status"],
+            "Comentário": travel_wish["comentario"],
+        }
+        tabela.append(linha)
+    return tabela
+
+
+def show_travel_wish_list(travel_wish_list):
+    """Mostra os paises que deseja viajar salvos."""
+    col1, col2 = st.columns(2)
+    col1.metric("Desejos de Viagem", len(travel_wish_list))
+    col2.metric("Região favorita", f"")
+    st.dataframe(build_travel_wish_table(travel_wish_list), hide_index=True, width="stretch")
+
+    country = st.selectbox("Escolha um desejo de viajem", list(travel_wish_list.keys()))
+    if country:
+        travel_wish = travel_wish_list[country]
+
+        status = st.selectbox("Status", STATUS, index=STATUS.index(travel_wish["status"]))
+        comentario = st.text_input("Comentário", travel_wish["comentario"])
+
+    if st.button("Salvar alterações"):
+        travel_wish.update({"status": status, "comentario": comentario})
+        dados.record_travel_wish(travel_wish)
+        st.rerun()
+
+    if st.button("🗑 Remover"):
+        del travel_wish_list[country]
+        dados.record_travel_wish(travel_wish_list)
+        st.rerun()
 
 
 def main():
@@ -160,10 +230,16 @@ def main():
     st.title("Países do Mundo")
 
     countries = dados.load_countries()
+    travel_wish_list = dados.load_travel_wish()
 
     sidebar(countries)
 
-    mostrar_paises(countries)
+    aba_paises, aba_desejo_viagem = st.tabs(["Países", "Desejo viajar"])
+    with aba_paises:
+        show_countries(countries)
+    with aba_desejo_viagem:
+        show_travel_wish_list(travel_wish_list)
+
 
 if __name__ == "__main__":
     main()

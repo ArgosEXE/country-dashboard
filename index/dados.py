@@ -7,6 +7,8 @@ from pathlib import Path
 # mesmo quando é executado a partir de outra pasta (como no Streamlit Cloud).
 FOLDER = Path(__file__).parent
 COUNTRIES_PATH = FOLDER / "paises.csv"
+TRAVEL_WISH_LIST_PATH = FOLDER / "desejo_viajar.csv"
+TRAVEL_WISH_FIELDS = ["pais", "regiao", "moeda", "cotacao_brl", "status", "comentario"]
 
 
 def read_countries():
@@ -27,10 +29,57 @@ def read_countries():
 
     return countries
 
-def converter_preco(preco):
-    """Converte um preço do site em número: "£51.77" -> 51.77"""
-    return float(preco.replace("£", ""))
 
+def save_travel_wish(country):
+    """Acrescenta um país no fim do arquivo de desejo viajar (modo "a")."""
+    arquivo_ja_existia = TRAVEL_WISH_LIST_PATH.exists()
+    with open(TRAVEL_WISH_LIST_PATH, "a", encoding="utf-8", newline="") as arquivo:
+        escritor = csv.DictWriter(arquivo, fieldnames=TRAVEL_WISH_FIELDS)
+        if not arquivo_ja_existia:
+            escritor.writeheader()
+        escritor.writerow({
+            "pais": country["pais"],
+            "regiao": country["regiao"],
+            "moeda": country["moeda"],
+            "cotacao_brl": country["cotacao_brl"],
+            "status": "Quero viajar",
+            "comentario": "",
+        })
+
+
+def load_travel_wish(caminho=TRAVEL_WISH_LIST_PATH):
+    """Lê os paises da lista desejo viajar e devolve um dicionário: {pais: dados do pais que deseja viajar}."""
+    travel_wish_list = {}
+    try:
+        with open(TRAVEL_WISH_LIST_PATH, encoding="utf-8", newline="") as arquivo:
+            leitor = csv.DictReader(arquivo)
+            for linha in leitor:
+                travel_wish_list[linha["pais"]] = {
+                    "regiao": linha["regiao"],
+                    "moeda": linha["moeda"],
+                    "cotacao_brl": linha["cotacao_brl"],
+                    "status": linha["status"],
+                    "comentario": linha["comentario"],
+                }
+    except FileNotFoundError:
+        pass # Ainda não há favoritos: não é um erro
+    return travel_wish_list
+
+
+def record_travel_wish(travel_wish_list):
+    """Reescreve o arquivo inteiro com os paises de desejo viajar do dicionário (modo "w")."""
+    with open(TRAVEL_WISH_LIST_PATH, "w", encoding="utf-8", newline="") as arquivo:
+        escritor = csv.DictWriter(arquivo, fieldnames=TRAVEL_WISH_FIELDS)
+        escritor.writeheader()
+        for pais, travel_wish in travel_wish_list.items():
+            escritor.writerow({
+                "pais": pais,
+                "regiao": travel_wish["regiao"],
+                "moeda": travel_wish["moeda"],
+                "cotacao_brl": travel_wish["cotacao_brl"],
+                "status": travel_wish["status"],
+                "comentario": travel_wish["comentario"],
+            })
 
 
 def prepare_countries(lines):
