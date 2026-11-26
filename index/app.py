@@ -135,11 +135,10 @@ def find_country(countries, country_name):
             return country
 
 def population_size(countries):
-    
+    """Devolve o menor e o maior valor de população."""
     if not countries:
         return None, None
     
-    """Devolve o menor e o maior valor de população."""
     smaller = int(countries[0]["populacao"])
     bigger = int(countries[0]["populacao"])
     smaller_country_pop = countries[0]["pais"]
