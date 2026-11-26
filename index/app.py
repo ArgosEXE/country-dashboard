@@ -33,11 +33,7 @@ def build_table(countries):
 
 def search_for_name(countries, search):
     """Devolve só os países cujo nome contém o texto buscado."""
-    founded = []
-    for country in countries:
-        if search.lower().strip() in country["pais"].lower().strip():
-            founded.append(country)
-
+    founded = [country for country in countries if search.lower().strip() in country["pais"].lower().strip()]
     return founded
 
 
@@ -61,8 +57,7 @@ def list_nome_moeda(countries):
         if nome_moeda not in nomes_moedas:
             nomes_moedas.append(nome_moeda)
 
-    nomes_moedas.sort()
-    return nomes_moedas
+    return sorted(nomes_moedas, key=lambda item: item[0])
 
 
 def cambio(cotacao, real):
@@ -74,12 +69,7 @@ def filter_for_region(countries, region):
     """Devolve só os países da região escolhida. Com "Todas", devolve todos."""
     if region == "Todas":
         return countries
-
-    result = []
-    for country in countries:
-        if format_region(country["regiao"]) == region:
-            result.append(country)
-
+    result = [country for country in countries if format_region(country["regiao"]) == region]
     return result
 
 
@@ -144,6 +134,28 @@ def find_country(countries, country_name):
         if country["pais"] == country_name:
             return country
 
+def population_size(countries):
+    
+    if not countries:
+        return None, None
+    
+    """Devolve o menor e o maior valor de população."""
+    smaller = int(countries[0]["populacao"])
+    bigger = int(countries[0]["populacao"])
+    smaller_country_pop = countries[0]["pais"]
+    bigger_country_pop = countries[0]["pais"]
+
+    for country in countries:
+        population = int(country["populacao"])
+        if population < smaller:
+            smaller = population
+            smaller_country_pop = country["pais"]
+        if population > bigger:
+            bigger = population
+            bigger_country_pop = country["pais"]
+
+    return smaller_country_pop, bigger_country_pop
+
 
 def list_countries_names(countries):
     countries_names = []
@@ -153,7 +165,13 @@ def list_countries_names(countries):
 
 
 def show_countries(countries):
-    st.metric("Total de países", len(countries))
+
+    col1, col2, col3 = st.columns(3)
+
+    population_smaller, population_bigger = population_size(countries)
+    col1.metric("Total de países", len(countries))
+    col2.metric("País mais populoso: ", population_bigger)
+    col3.metric("País menos populoso: ", population_smaller)
 
     col_search, col_regions = st.columns(2)
 
@@ -205,24 +223,28 @@ def show_travel_wish_list(travel_wish_list):
     col1, col2 = st.columns(2)
     col1.metric("Desejos de Viagem", len(travel_wish_list))
     col2.metric("Região favorita", f"")
-    st.dataframe(build_travel_wish_table(travel_wish_list), hide_index=True, width="stretch")
+    travel_wish_list_amount = len(travel_wish_list)
+    if travel_wish_list_amount == 0:
+        st.warning("Nenhum desejo de viagem adicionado")
+    else:
+        st.dataframe(build_travel_wish_table(travel_wish_list), hide_index=True, width="stretch")
 
-    country = st.selectbox("Escolha um desejo de viajem", list(travel_wish_list.keys()))
-    if country:
-        travel_wish = travel_wish_list[country]
+        country = st.selectbox("Escolha um desejo de viajem", list(travel_wish_list.keys()))
+        if country:
+            travel_wish = travel_wish_list[country]
 
-        status = st.selectbox("Status", STATUS, index=STATUS.index(travel_wish["status"]))
-        comentario = st.text_input("Comentário", travel_wish["comentario"])
+            status = st.selectbox("Status", STATUS, index=STATUS.index(travel_wish["status"]))
+            comentario = st.text_input("Comentário", travel_wish["comentario"])
 
-    if st.button("Salvar alterações"):
-        travel_wish.update({"status": status, "comentario": comentario})
-        dados.record_travel_wish(travel_wish)
-        st.rerun()
+        if st.button("Salvar alterações"):
+            travel_wish.update({"status": status, "comentario": comentario})
+            dados.record_travel_wish(travel_wish_list)
+            st.rerun()
 
-    if st.button("🗑 Remover"):
-        del travel_wish_list[country]
-        dados.record_travel_wish(travel_wish_list)
-        st.rerun()
+        if st.button("🗑 Remover"):
+            del travel_wish_list[country]
+            dados.record_travel_wish(travel_wish_list)
+            st.rerun()
 
 
 def main():
